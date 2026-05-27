@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>LSS Commitment Gauge</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --purple:#534AB7;--pl:#EEEDFE;--pd:#3C3489;
+  --green:#3B6D11;--gl:#E1F5EE;
+  --amber:#854F0B;--al:#FAEEDA;
+  --red:#A32D2D;--rl:#FCEBEB;
+  --gray:#444441;--grl:#F1EFE8;
+  --r:14px;--rs:10px
+}
+html,body{height:100%;background:#f5f4f0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a18;max-width:480px;margin:0 auto;min-height:100vh}
+.screen{display:none;min-height:100vh;flex-direction:column;background:#f5f4f0}
+.screen.active{display:flex}
+
+/* topbar */
+.topbar{background:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(0,0,0,.07);position:sticky;top:0;z-index:10}
+.brand{font-size:11px;font-weight:600;color:#888;letter-spacing:.08em}
+.cpill{background:var(--pl);color:var(--pd);font-size:12px;font-weight:600;padding:4px 12px;border-radius:999px}
+
+/* hero */
+.hero{background:#fff;padding:28px 20px 24px;border-bottom:1px solid rgba(0,0,0,.07)}
+.eyebrow{font-size:11px;font-weight:600;color:var(--purple);letter-spacing:.08em;margin-bottom:8px}
+.hero h1{font-size:28px;font-weight:700;color:#1a1a18;line-height:1.15;margin-bottom:8px}
+.hero p{font-size:14px;color:#666;line-height:1.6}
+.pt{height:6px;background:#eee;border-radius:999px;overflow:hidden;margin:14px 0 6px}
+.pb{height:100%;background:var(--purple);border-radius:999px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.pm{display:flex;justify-content:space-between;font-size:12px;color:#999}
+
+/* body */
+.bp{padding:16px;flex:1}
+.sl{font-size:11px;font-weight:600;color:#999;letter-spacing:.07em;margin-bottom:10px}
+.ng{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.nc{background:#fff;border-radius:var(--rs);padding:12px;border:1.5px solid #eee;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.nc:hover,.nc:active{border-color:#ccc}
+.nc.sel{border-color:var(--purple);background:var(--pl)}
+.nc.done{border-color:#c8e6b0}
+.av{width:34px;height:34px;border-radius:50%;background:#eee;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#666;flex-shrink:0}
+.nc.sel .av{background:var(--purple);color:#fff}
+.nc.done .av{background:#d4edbc;color:var(--green)}
+.nm{font-size:13px;font-weight:600;color:#1a1a18;line-height:1.2}
+.nc.sel .nm{color:var(--pd)}
+.st{font-size:11px;color:#aaa;margin-top:1px}
+.nc.done .st{color:var(--green);font-weight:500}
+
+/* fab */
+.fab{background:#fff;padding:14px 16px;border-top:1px solid rgba(0,0,0,.07);position:sticky;bottom:0;z-index:10}
+.btn{width:100%;padding:15px;border:none;border-radius:var(--rs);font-size:15px;font-weight:600;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.btnp{background:var(--purple);color:#fff}
+.btnp:hover,.btnp:active{background:var(--pd)}
+.btnp:disabled{background:#ddd;color:#aaa;cursor:not-allowed}
+.btno{background:#fff;color:#555;border:1.5px solid #e0e0e0;margin-top:8px}
+.btno:hover,.btno:active{background:#f5f5f5}
+
+/* form header */
+.fh{background:#fff;padding:18px 20px;border-bottom:1px solid rgba(0,0,0,.07);display:flex;align-items:center;gap:12px}
+.bav{width:46px;height:46px;border-radius:50%;background:var(--purple);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
+.fh h2{font-size:18px;font-weight:700;color:#1a1a18}
+.fh p{font-size:12px;color:#999}
+.segs{display:flex;gap:5px;padding:14px 20px;background:#fff;border-bottom:1px solid rgba(0,0,0,.07)}
+.seg{flex:1;height:4px;border-radius:999px;background:#eee;transition:background .3s}
+.seg.act{background:var(--purple)}
+.seg.dn{background:var(--green)}
+.sb{padding:20px;flex:1;overflow-y:auto}
+.sq{font-size:18px;font-weight:700;color:#1a1a18;margin-bottom:6px}
+.sh{font-size:13px;color:#888;line-height:1.6;margin-bottom:20px}
+.step-counter{font-size:12px;color:#aaa;font-weight:500}
+
+/* avail options */
+.os{display:flex;flex-direction:column;gap:8px}
+.ao{background:#fff;border:1.5px solid #eee;border-radius:var(--r);padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .15s;text-align:left;-webkit-tap-highlight-color:transparent}
+.ao:hover,.ao:active{border-color:#ccc}
+.ao .ic{font-size:22px;width:32px;text-align:center;flex-shrink:0}
+.ao .tl{font-size:14px;font-weight:600;color:#1a1a18}
+.ao .sb2{font-size:12px;color:#aaa;margin-top:2px;line-height:1.4}
+.ao.vl.a2{border-color:#791F1F;background:#fff0f0}.ao.vl.a2 .tl{color:#791F1F}
+.ao.lo.a2{border-color:var(--red);background:#fff9f9}.ao.lo.a2 .tl{color:var(--red)}
+.ao.md.a2{border-color:var(--amber);background:#fffbf5}.ao.md.a2 .tl{color:var(--amber)}
+.ao.hi.a2{border-color:var(--green);background:#f5fbf0}.ao.hi.a2 .tl{color:var(--green)}
+.ao.vh.a2{border-color:#27500A;background:#edfae0}.ao.vh.a2 .tl{color:#27500A}
+
+/* role options */
+.ro{background:#fff;border:1.5px solid #eee;border-radius:var(--r);padding:14px 16px;cursor:pointer;display:flex;align-items:flex-start;gap:12px;transition:all .15s;text-align:left;width:100%;position:relative;-webkit-tap-highlight-color:transparent}
+.ro:hover,.ro:active{border-color:#ccc}
+.ro.a2{border-color:var(--purple);background:var(--pl)}
+.ro .ic{font-size:18px;width:26px;flex-shrink:0;padding-top:2px}
+.ro .tl{font-size:14px;font-weight:600;color:#1a1a18;margin-bottom:3px}
+.ro.a2 .tl{color:var(--pd)}
+.ro .sb2{font-size:12px;color:#aaa;line-height:1.5}
+.ro.a2 .sb2{color:var(--purple)}
+.rank-badge{position:absolute;top:10px;right:12px;width:22px;height:22px;border-radius:50%;background:var(--purple);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+
+/* reason grid */
+.reason-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.reason-btn{padding:10px 12px;border:1.5px solid #eee;border-radius:var(--rs);background:#fff;color:#555;font-size:13px;cursor:pointer;text-align:left;transition:all .15s;font-weight:500;-webkit-tap-highlight-color:transparent}
+.reason-btn:hover,.reason-btn:active{border-color:#ccc}
+.reason-btn.sel{border-color:var(--purple);background:var(--pl);color:var(--pd)}
+
+/* textarea */
+.ntarea{width:100%;padding:14px;border:1.5px solid #e0e0e0;border-radius:var(--rs);font-family:inherit;font-size:14px;resize:none;outline:none;height:100px;line-height:1.6;color:#1a1a18;background:#fff;margin-bottom:12px}
+.ntarea:focus{border-color:var(--purple)}
+
+/* schedule card */
+.sched-card{background:#fff;border:1.5px solid var(--purple);border-radius:var(--r);padding:18px;text-align:center;margin-bottom:12px}
+.sched-card h3{font-size:15px;font-weight:700;color:#1a1a18;margin-bottom:6px}
+.sched-card p{font-size:13px;color:#888;line-height:1.6;margin-bottom:14px}
+.sched-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:var(--purple);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer;text-decoration:none}
+.sched-btn:hover{background:var(--pd)}
+.sched-done-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 14px;background:var(--gl);border:1.5px solid #a8d880;border-radius:var(--rs);cursor:pointer;margin-top:10px;font-size:13px;font-weight:600;color:var(--green);width:100%}
+
+/* done screen */
+.done-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.dc{width:80px;height:80px;border-radius:50%;background:var(--gl);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:36px;color:var(--green)}
+.done-wrap h1{font-size:24px;font-weight:700;margin-bottom:8px}
+.done-wrap p{font-size:14px;color:#888;line-height:1.6;margin-bottom:28px}
+
+/* back row */
+.br{background:#fff;padding:14px 20px;border-bottom:1px solid rgba(0,0,0,.07);display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:10}
+.bb{background:none;border:none;color:#888;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:6px;font-weight:500;padding:4px 0;-webkit-tap-highlight-color:transparent}
+.bb:hover{color:#1a1a18}
+
+/* responses */
+.rb{padding:16px;flex:1;overflow-y:auto}
+.sr{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.sb3{background:#fff;border-radius:var(--rs);padding:16px 10px;text-align:center;border:1px solid rgba(0,0,0,.06)}
+.sn{font-size:26px;font-weight:700}
+.sl2{font-size:11px;color:#aaa;margin-top:4px;font-weight:500}
+.alrt{border-radius:var(--r);padding:14px 16px;margin-bottom:14px;font-size:13px;line-height:1.6;border:1.5px solid}
+.alrt strong{display:block;margin-bottom:4px;font-size:14px;font-weight:600}
+.ar{background:#fff9f9;border-color:#f5a0a0;color:var(--red)}
+.aa{background:#fffbf0;border-color:#f5cc80;color:var(--amber)}
+.ag{background:#f5fbf0;border-color:#a8d880;color:var(--green)}
+.tabs{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
+.tab{padding:7px 14px;border:1.5px solid #e0e0e0;border-radius:999px;background:#fff;color:#888;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.tab.act{background:var(--purple);border-color:var(--purple);color:#fff}
+.rc{background:#fff;border-radius:var(--r);padding:16px;margin-bottom:10px;border:1px solid rgba(0,0,0,.06)}
+.rt{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.rn{font-size:15px;font-weight:700;color:#1a1a18}
+.rts{font-size:11px;color:#bbb;margin-top:2px}
+.delbtn{background:none;border:none;color:#ccc;cursor:pointer;padding:4px 6px;border-radius:8px;font-size:15px;-webkit-tap-highlight-color:transparent}
+.delbtn:hover,.delbtn:active{color:var(--red);background:#fff9f9}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.chip{display:inline-block;font-size:12px;padding:4px 12px;border-radius:999px;font-weight:600}
+.cp{background:var(--pl);color:var(--pd)}
+.cg{background:var(--gl);color:var(--green)}
+.ca{background:var(--al);color:var(--amber)}
+.cr{background:var(--rl);color:var(--red)}
+.cgr{background:var(--grl);color:var(--gray)}
+.cvl{background:#ffe0e0;color:#791F1F}
+.cvh{background:#d4f0bc;color:#27500A}
+.rn2{font-size:13px;color:#888;font-style:italic;margin-top:8px;padding:10px 12px;background:#fafafa;border-radius:8px;line-height:1.5;border-left:3px solid var(--pl)}
+.sched-tag{font-size:12px;padding:4px 10px;border-radius:999px;font-weight:500;display:inline-flex;align-items:center;gap:4px}
+.sched-y{background:#d4f0bc;color:#27500A}
+.sched-n{background:#f5f5f5;color:#aaa}
+.abtns{background:#fff;padding:14px 16px;border-top:1px solid rgba(0,0,0,.07);display:flex;flex-direction:column;gap:8px}
+.ba{width:100%;padding:14px;background:var(--pl);color:var(--pd);border:1.5px solid var(--purple);border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent}
+.ba:hover,.ba:active{background:#CECBF6}
+.ba.copied{background:var(--gl);border-color:var(--green);color:var(--green)}
+.bdng{width:100%;padding:12px;background:#fff;color:#bbb;border:1.5px solid #eee;border-radius:var(--rs);font-size:13px;cursor:pointer;font-weight:500;-webkit-tap-highlight-color:transparent}
+.bdng:hover,.bdng:active{color:var(--red);border-color:#f5a0a0;background:#fff9f9}
+.ci{background:var(--gl);border:1.5px solid #a8d880;border-radius:var(--rs);padding:14px 16px;font-size:13px;color:var(--green);line-height:1.6;margin-bottom:10px;display:none}
+.ci strong{display:block;margin-bottom:4px;font-weight:700}
+.cb{background:#f5f4f0;border:1.5px dashed #ddd;border-radius:var(--rs);padding:14px;font-size:12px;color:#888;line-height:1.6;word-break:break-all;margin-bottom:10px;max-height:120px;overflow-y:auto;display:none}
+
+/* lock screen */
+.lock-s{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px}
+.li{width:64px;height:64px;border-radius:50%;background:var(--pl);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:28px}
+.lock-s h2{font-size:20px;font-weight:700;margin-bottom:6px;text-align:center}
+.lock-s p{font-size:13px;color:#888;text-align:center;margin-bottom:24px;line-height:1.6}
+.pr{display:flex;gap:10px;margin-bottom:16px}
+.pd2{width:16px;height:16px;border-radius:50%;border:2px solid #ddd;background:#fff;transition:all .2s}
+.pd2.f{background:var(--purple);border-color:var(--purple)}
+.pd2.e{background:var(--red);border-color:var(--red)}
+.np{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:280px}
+.nb{aspect-ratio:1;border:1.5px solid #eee;border-radius:var(--r);background:#fff;font-size:20px;font-weight:600;cursor:pointer;color:#1a1a18;transition:all .1s;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
+.nb:hover,.nb:active{background:#f5f5f5;transform:scale(.96)}
+
+/* loading/toast */
+.toast{font-size:12px;color:#bbb;text-align:center;padding:6px;min-height:22px}
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;z-index:100;display:none}
+.spinner{width:32px;height:32px;border:3px solid #eee;border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* setup banner */
+.setup-banner{background:#fff3cd;border:1.5px solid #ffc107;border-radius:var(--rs);padding:14px 16px;margin:16px;font-size:13px;color:#856404;line-height:1.6;display:none}
+.setup-banner strong{display:block;margin-bottom:4px;font-weight:700}
+.setup-banner input{width:100%;padding:10px 12px;border:1.5px solid #e0e0e0;border-radius:var(--rs);font-size:13px;margin-top:8px;outline:none;font-family:inherit}
+.setup-banner input:focus{border-color:var(--purple)}
+.setup-banner .save-url-btn{margin-top:8px;padding:10px 16px;background:var(--purple);color:#fff;border:none;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;width:100%}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+<!-- HOME -->
+<div id="s-home" class="screen active">
+  <div class="topbar"><span class="brand">LSS ACTIVITIES</span><span class="cpill" id="hp">0 / 17</span></div>
+  <div class="hero">
+    <div class="eyebrow">COMMITMENT GAUGE</div>
+    <h1>How much can<br>you give<br>this term?</h1>
+    <p>Fill this out before roles are assigned. Takes about 3 minutes.</p>
+    <div class="pt"><div class="pb" id="pgb" style="width:0%"></div></div>
+    <div class="pm"><span id="pgl">0 responded</span><span>17 officers</span></div>
+  </div>
+  <div class="bp">
+    <div class="setup-banner" id="setup-banner">
+      <strong>⚙️ First-time setup — paste your Web App URL</strong>
+      After deploying the Google Apps Script, paste the Web App URL below. This only needs to be done once.
+      <input type="text" id="api-url-input" placeholder="https://script.google.com/macros/s/.../exec">
+      <button class="save-url-btn" onclick="saveApiUrl()">Save URL</button>
+    </div>
+    <div class="sl">WHO ARE YOU?</div>
+    <div class="ng" id="ng"></div>
+  </div>
+  <div class="fab">
+    <button class="btn btnp" id="sb2" disabled onclick="startForm()">Start my response</button>
+    <button class="btn btno" onclick="tryView()">View responses</button>
+  </div>
+</div>
+
+<!-- LOCK -->
+<div id="s-lock" class="screen">
+  <div class="br"><button class="bb" onclick="goTo('s-home')">← Back</button></div>
+  <div class="lock-s">
+    <div class="li">🔒</div>
+    <h2>Responses are locked</h2>
+    <p>Only the VP can view all responses. Enter the 4-digit passcode.</p>
+    <div class="pr" id="pr">
+      <div class="pd2" id="p0"></div><div class="pd2" id="p1"></div>
+      <div class="pd2" id="p2"></div><div class="pd2" id="p3"></div>
+    </div>
+    <div class="np" id="np"></div>
+    <p style="font-size:12px;color:#bbb;margin-top:16px;text-align:center">Hint: ask Brendan</p>
+  </div>
+</div>
+
+<!-- FORM -->
+<div id="s-form" class="screen">
+  <div class="fh">
+    <div class="bav" id="fav">B</div>
+    <div><h2 id="fname">Hey!</h2><p>LSS Activities Officer</p></div>
+  </div>
+  <div class="segs">
+    <div class="seg" id="s0"></div><div class="seg" id="s1"></div>
+    <div class="seg" id="s2"></div><div class="seg" id="s3"></div>
+  </div>
+  <div class="sb" id="stepb"></div>
+  <div class="toast" id="toast"></div>
+  <div class="fab" id="ffab"></div>
+</div>
+
+<!-- DONE -->
+<div id="s-done" class="screen">
+  <div class="done-wrap">
+    <div class="dc">✓</div>
+    <h1>All done!</h1>
+    <p>Your response is saved to the LSS Google Sheet. Come back anytime!</p>
+    <button class="btn btnp" style="width:200px" onclick="goTo('s-home');loadProgress()">Back to home</button>
+  </div>
+</div>
+
+<!-- RESPONSES -->
+<div id="s-resp" class="screen">
+  <div class="br">
+    <button class="bb" onclick="goTo('s-home')">← Back</button>
+    <span style="font-size:12px;color:#bbb;margin-left:auto">🔓 Unlocked</span>
+  </div>
+  <div class="rb">
+    <div style="margin-bottom:14px">
+      <h1 style="font-size:22px;font-weight:700;margin-bottom:4px">All responses</h1>
+      <p style="font-size:13px;color:#888" id="rsub">—</p>
+    </div>
+    <div class="sr" id="srw"></div>
+    <div id="az"></div>
+    <div class="tabs">
+      <button class="tab act" onclick="fR('all',this)">All</button>
+      <button class="tab" onclick="fR('vh',this)">Very High</button>
+      <button class="tab" onclick="fR('hi',this)">High</button>
+      <button class="tab" onclick="fR('md',this)">Moderate</button>
+      <button class="tab" onclick="fR('lo',this)">Low</button>
+      <button class="tab" onclick="fR('vl',this)">Very Low</button>
+    </div>
+    <div id="rl2"></div>
+  </div>
+  <div class="abtns">
+    <div class="ci" id="ci"><strong>📋 Copied! Here's what to do:</strong> Go to your Claude chat → paste the text → send. Claude will analyze and suggest role assignments.</div>
+    <div class="cb" id="cbox"></div>
+    <button class="ba" id="cbtn" onclick="copyR()"><span id="cbi">📋</span> <span id="cbt">Copy responses for Claude</span></button>
+    <button class="bdng" onclick="clearAll()">Clear all responses</button>
+  </div>
+</div>
+
+<script>
+const OFF=["Abihail Buhay","Airah Gallego","Angel Marie Colorado","Angela Eusebio","Beia Abril","Brendan Millares","Chrysler Anonuevo","Ella Ilagan","Frances Dion Iglesia","Geovin Jesus Reyes","Ian Apolinario","Krisul Isabel Condor","Nikko Hermoso","R Jay V. Berano","Ralph Villariez","Raymond Cabansag","Ryuichi Rosh De Guzman"];
+const PASS='2789';
+const SCHED_URL='https://docs.google.com/spreadsheets/d/1b3ocFAeQ83owfCdXy6rnajPzOO8PinJkmwWqCI9PTOo/edit';
+const API_KEY='lss_api_url';
+
+let R=[],selN=null,step=1,sAvail=null,sRoles=[],sReasons=[],schedDone=false,filt='all',pin='',unlocked=false,submittedNames=[];
+
+// ---- API URL management ----
+function getApiUrl(){return localStorage.getItem(API_KEY)||'';}
+function saveApiUrl(){
+  const val=document.getElementById('api-url-input').value.trim();
+  if(!val){alert('Please paste the Web App URL first.');return;}
+  localStorage.setItem(API_KEY,val);
+  document.getElementById('setup-banner').style.display='none';
+  alert('URL saved! Loading data...');
+  loadProgress();
+}
+
+// ---- API calls ----
+async function api(params){
+  const url=getApiUrl();
+  if(!url)return null;
+  const qs=new URLSearchParams(params).toString();
+  try{
+    const r=await fetch(url+'?'+qs);
+    return await r.json();
+  }catch(e){return null;}
+}
+
+function showLoading(v){document.getElementById('loading').style.display=v?'flex':'none';}
+
+async function loadProgress(){
+  if(!getApiUrl()){document.getElementById('setup-banner').style.display='block';buildGrid([]);return;}
+  const res=await api({action:'getProgress'});
+  submittedNames=res&&res.names?res.names:[];
+  buildGrid(submittedNames);
+  const n=submittedNames.length,t=OFF.length,pct=Math.round(n/t*100);
+  document.getElementById('pgb').style.width=pct+'%';
+  document.getElementById('hp').textContent=n+' / '+t;
+  document.getElementById('pgl').textContent=n+' responded';
+}
+
+// ---- Grid ----
+function ini(n){const p=n.split(' ');return(p[0][0]+(p[p.length-1][0])).toUpperCase();}
+function fn(n){return n.split(' ')[0];}
+function sn(n){const p=n.split(' ');return p[0]+' '+p[p.length-1];}
+
+function buildGrid(done){
+  const g=document.getElementById('ng');g.innerHTML='';
+  done=done||[];
+  OFF.forEach(n=>{
+    const d=done.includes(n);
+    const el=document.createElement('div');
+    el.className='nc'+(d?' done':'');
+    el.innerHTML=`<div class="av">${ini(n)}</div><div style="flex:1"><div class="nm">${sn(n)}</div><div class="st">${d?'Submitted ✓':'Tap to select'}</div></div>`;
+    el.onclick=()=>pick(n,el);
+    g.appendChild(el);
+  });
+}
+
+function pick(n,el){
+  document.querySelectorAll('.nc').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');selN=n;
+  document.getElementById('sb2').disabled=false;
+}
+
+// ---- Lock / passcode ----
+function tryView(){
+  if(unlocked){loadAndShowResp();return;}
+  pin='';renderPin();goTo('s-lock');
+}
+
+function buildNumpad(){
+  const np=document.getElementById('np');np.innerHTML='';
+  [1,2,3,4,5,6,7,8,9,'',0,'⌫'].forEach(k=>{
+    const b=document.createElement('button');
+    b.className='nb';b.textContent=k;
+    if(k==='')b.style.visibility='hidden';
+    else b.onclick=()=>pressKey(k);
+    np.appendChild(b);
+  });
+}
+
+function pressKey(k){
+  if(k==='⌫'){pin=pin.slice(0,-1);}
+  else if(pin.length<4){pin+=String(k);}
+  renderPin();
+  if(pin.length===4){
+    if(pin===PASS){unlocked=true;setTimeout(()=>loadAndShowResp(),200);}
+    else{
+      document.querySelectorAll('.pd2').forEach(d=>d.classList.add('e'));
+      setTimeout(()=>{pin='';document.querySelectorAll('.pd2').forEach(d=>d.classList.remove('e','f'));},700);
+    }
+  }
+}
+function renderPin(){for(let i=0;i<4;i++){document.getElementById('p'+i).classList.toggle('f',i<pin.length);}}
+
+// ---- Form ----
+function startForm(){
+  if(!selN)return;
+  if(submittedNames.includes(selN)&&!confirm(fn(selN)+' already submitted. Overwrite?'))return;
+  sAvail=null;sRoles=[];sReasons=[];schedDone=false;step=1;
+  document.getElementById('fav').textContent=ini(selN);
+  document.getElementById('fname').textContent='Hey, '+fn(selN)+'!';
+  goTo('s-form');renderStep();
+}
+
+function renderStep(){
+  ['s0','s1','s2','s3'].forEach((id,i)=>{
+    const s=document.getElementById(id);s.className='seg';
+    if(i+1<step)s.classList.add('dn');else if(i+1===step)s.classList.add('act');
+  });
+  const sb=document.getElementById('stepb');
+  const fab=document.getElementById('ffab');
+
+  if(step===1){
+    sb.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="sq">How available are you?</div><span class="step-counter">Step 1 of 4</span>
+      </div>
+      <div class="sh">Be honest — this shapes how much you can realistically take on across PaLSSiklaban, Transcend, and LSSUMMIT.</div>
+      <div class="os">
+        <div class="ao vl${sAvail==='vl'?' a2':''}" onclick="pA('vl',this)"><span class="ic">🪫</span><div><div class="tl">Very Low</div><div class="sb2">Barely available — can only do the bare minimum</div></div></div>
+        <div class="ao lo${sAvail==='lo'?' a2':''}" onclick="pA('lo',this)"><span class="ic">🔋</span><div><div class="tl">Low — pretty busy</div><div class="sb2">Can help but can't lead heavy workloads</div></div></div>
+        <div class="ao md${sAvail==='md'?' a2':''}" onclick="pA('md',this)"><span class="ic">⚡</span><div><div class="tl">Moderate — manageable</div><div class="sb2">Can handle a lead role with some support</div></div></div>
+        <div class="ao hi${sAvail==='hi'?' a2':''}" onclick="pA('hi',this)"><span class="ic">🔥</span><div><div class="tl">High — committed</div><div class="sb2">Ready to take on a major role this term</div></div></div>
+        <div class="ao vh${sAvail==='vh'?' a2':''}" onclick="pA('vh',this)"><span class="ic">💎</span><div><div class="tl">Very High — full commit</div><div class="sb2">All in — can lead and take on extra responsibilities</div></div></div>
+      </div>`;
+    fab.innerHTML=`<button class="btn btnp" id="nb1" ${sAvail?'':'disabled'} onclick="step++;renderStep()">Next →</button>`;
+
+  }else if(step===2){
+    const ranks={};sRoles.forEach((r,i)=>ranks[r]=i+1);
+    sb.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="sq">Pick your top 2 roles</div><span class="step-counter">Step 2 of 4</span>
+      </div>
+      <div class="sh">Choose your 1st and 2nd preference. Tap once for 1st choice, tap the same again to deselect, or tap another for 2nd.</div>
+      <div class="os">
+        ${[['Event Lead','👑','Overall lead — final decisions, full accountability'],['General Lead A','💡','Planning, content, publicity, org dev'],['General Lead B','🔧','Operations, logistics, materials, day-of execution'],['General Lead C','📋','Admin, forms, compliance, finance'],['Core Member','🤝','Documentation, trackers, comms, execution support']]
+        .map(([r,ic,d])=>`<button class="ro${sRoles.includes(r)?' a2':''}" onclick="pR('${r}',this)"><span class="ic">${ic}</span><div><div class="tl">${r}</div><div class="sb2">${d}</div></div>${ranks[r]?`<div class="rank-badge">${ranks[r]}</div>`:''}</button>`).join('')}
+      </div>`;
+    fab.innerHTML=`<button class="btn btnp" id="nb2" ${sRoles.length>=2?'':'disabled'} onclick="step++;renderStep()">Next →</button>`;
+
+  }else if(step===3){
+    const reasons=['Thesis / Capstone','Heavy acad load','Multiple org commitments','Part-time work','Personal circumstances','Family responsibilities','Health concerns','Just being real with myself'];
+    sb.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="sq">What's your reason?</div><span class="step-counter">Step 3 of 4</span>
+      </div>
+      <div class="sh">Select all that apply, then add anything else below. This helps Brendan understand the context.</div>
+      <div class="reason-grid">${reasons.map(r=>`<button class="reason-btn${sReasons.includes(r)?' sel':''}" onclick="toggleReason('${r}',this)">${r}</button>`).join('')}</div>
+      <textarea class="ntarea" id="nt" placeholder="Anything else — constraints, preferences, concerns..."></textarea>`;
+    fab.innerHTML=`<button class="btn btnp" onclick="step++;renderStep()">Next →</button>`;
+
+  }else{
+    sb.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="sq">Fill in your schedule</div><span class="step-counter">Step 4 of 4</span>
+      </div>
+      <div class="sh">Open the LSS Schedule Matrix and mark your available time slots. Come back and tap "Done" when finished.</div>
+      <div class="sched-card">
+        <h3>📅 LSS Schedule Matrix</h3>
+        <p>Find your column in the sheet and type "X" in the cells where you're free. Light red cells show the best meeting times for the team.</p>
+        <a class="sched-btn" href="${SCHED_URL}" target="_blank" rel="noopener">Open Schedule Sheet ↗</a>
+        <button class="sched-done-btn" id="schedDoneBtn" onclick="markSchedDone()">
+          ${schedDone?'✓ Done — schedule filled in':'I\'ve filled in my schedule'}
+        </button>
+      </div>`;
+    fab.innerHTML=`<button class="btn btnp" id="subBtn" ${schedDone?'':'disabled'} onclick="submitForm(false)">Submit response</button>
+      <button class="btn btno" onclick="submitForm(true)" style="font-size:13px;margin-top:8px">Skip schedule and submit</button>`;
+  }
+}
+
+function pA(v,el){
+  sAvail=v;
+  document.querySelectorAll('.ao').forEach(e=>e.classList.remove('a2'));
+  el.classList.add('a2');
+  const b=document.getElementById('nb1');if(b)b.disabled=false;
+}
+
+function pR(v,el){
+  if(sRoles.includes(v)){sRoles=sRoles.filter(r=>r!==v);}
+  else if(sRoles.length<2){sRoles.push(v);}
+  else{sRoles.shift();sRoles.push(v);}
+  const ranks={};sRoles.forEach((r,i)=>ranks[r]=i+1);
+  document.querySelectorAll('.ro').forEach(btn=>{
+    const t=btn.querySelector('.tl').textContent;
+    btn.classList.toggle('a2',sRoles.includes(t));
+    let rb=btn.querySelector('.rank-badge');
+    if(ranks[t]){if(!rb){rb=document.createElement('div');rb.className='rank-badge';btn.appendChild(rb);}rb.textContent=ranks[t];}
+    else if(rb)rb.remove();
+  });
+  const b=document.getElementById('nb2');if(b)b.disabled=sRoles.length<2;
+}
+
+function toggleReason(r,btn){
+  if(sReasons.includes(r))sReasons=sReasons.filter(x=>x!==r);
+  else sReasons.push(r);
+  btn.classList.toggle('sel',sReasons.includes(r));
+}
+
+function markSchedDone(){
+  schedDone=true;
+  const btn=document.getElementById('schedDoneBtn');
+  if(btn){btn.textContent='✓ Done — schedule filled in';btn.style.background='#d4f0bc';}
+  const sub=document.getElementById('subBtn');if(sub)sub.disabled=false;
+}
+
+async function submitForm(skipSched){
+  const nt=document.getElementById('nt');
+  const data={
+    name:selN,avail:sAvail,roles:sRoles,reasons:sReasons,
+    notes:nt?nt.value.trim():'',
+    schedFilled:skipSched?false:schedDone,
+    ts:new Date().toLocaleDateString('en-PH',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
+  };
+  showLoading(true);
+  const res=await api({action:'submit',data:JSON.stringify(data)});
+  showLoading(false);
+  if(res&&res.ok){
+    submittedNames=submittedNames.filter(n=>n!==selN);
+    submittedNames.push(selN);
+    goTo('s-done');
+  }else{
+    alert('Could not save. Check your internet connection and try again.');
+  }
+}
+
+// ---- Responses ----
+async function loadAndShowResp(){
+  showLoading(true);
+  const res=await api({action:'getResponses',pass:PASS});
+  showLoading(false);
+  if(!res||res.error){alert('Could not load responses.');return;}
+  R=res.responses||[];
+  goTo('s-resp');
+  renderResp();
+}
+
+function renderResp(){
+  const counts={vh:0,hi:0,md:0,lo:0,vl:0};
+  R.forEach(r=>{if(counts[r.avail]!==undefined)counts[r.avail]++;});
+  const n=R.length;
+  document.getElementById('rsub').textContent=n+' of '+OFF.length+' officers responded';
+  document.getElementById('srw').innerHTML=`
+    <div class="sb3"><div class="sn" style="color:#27500A">${counts.vh+counts.hi}</div><div class="sl2">High+</div></div>
+    <div class="sb3"><div class="sn" style="color:var(--amber)">${counts.md}</div><div class="sl2">Moderate</div></div>
+    <div class="sb3"><div class="sn" style="color:var(--red)">${counts.lo+counts.vl}</div><div class="sl2">Low+</div></div>`;
+  const az=document.getElementById('az');az.innerHTML='';
+  const lo=counts.lo+counts.vl;
+  if(n>0){
+    if(lo===n)az.innerHTML=`<div class="alrt ar"><strong>🚨 Everyone is low this term</strong>No one should be Event Lead. Consider breaking tasks down, escalating to the overall head, or reducing event scope.</div>`;
+    else if(lo>n/2)az.innerHTML=`<div class="alrt aa"><strong>⚠️ Mostly low availability</strong>More than half the team is stretched. Lean on moderate+ members for leads and consolidate responsibilities.</div>`;
+    else if(counts.vh+counts.hi>=n*0.6)az.innerHTML=`<div class="alrt ag"><strong>✅ Strong availability this term</strong>Majority are committed — good time to assign confident leads and push for ambitious deliverables.</div>`;
+  }
+  const filtered=filt==='all'?R:R.filter(r=>r.avail===filt);
+  const aLabel={vl:'Very Low',lo:'Low',md:'Moderate',hi:'High',vh:'Very High'};
+  const aChip={vl:'cvl',lo:'cr',md:'ca',hi:'cg',vh:'cvh'};
+  if(!filtered.length){document.getElementById('rl2').innerHTML='<div style="text-align:center;padding:40px;color:#ccc;font-size:14px">No responses for this filter.</div>';return;}
+  document.getElementById('rl2').innerHTML=filtered.map((r,idx)=>{
+    const roleChips=r.roles?r.roles.map((rl,i)=>`<span class="chip ${rl==='Event Lead'?'cp':rl==='Core Member'?'cgr':'cg'}">${i===0?'1st':'2nd'}: ${rl}</span>`).join(''):'';
+    const reasons=r.reasons&&r.reasons.length?`<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">${r.reasons.map(x=>`<span class="chip cgr">${x}</span>`).join('')}</div>`:'';
+    const note=r.notes?`<div class="rn2">"${r.notes}"</div>`:'';
+    const sched=`<span class="sched-tag ${r.schedFilled?'sched-y':'sched-n'}">${r.schedFilled?'✓ Schedule filled':'Schedule pending'}</span>`;
+    return`<div class="rc">
+      <div class="rt"><div><div class="rn">${r.name}</div><div class="rts">${r.ts||''}</div></div>
+      <button class="delbtn" onclick="delR('${r.name}')">🗑</button></div>
+      <div class="chips"><span class="chip ${aChip[r.avail]||'cgr'}">${aLabel[r.avail]||r.avail}</span>${roleChips}${sched}</div>
+      ${reasons}${note}
+    </div>`;
+  }).join('');
+}
+
+function fR(f,btn){filt=f;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('act'));btn.classList.add('act');renderResp();}
+
+async function delR(name){
+  if(!confirm('Remove '+name+"'s response?"))return;
+  showLoading(true);
+  await api({action:'delete',name,pass:PASS});
+  showLoading(false);
+  R=R.filter(r=>r.name!==name);
+  submittedNames=submittedNames.filter(n=>n!==name);
+  buildGrid(submittedNames);
+  renderResp();
+}
+
+async function clearAll(){
+  if(!confirm('Clear ALL responses from the Google Sheet? Cannot be undone.'))return;
+  showLoading(true);
+  await api({action:'clearAll',pass:PASS});
+  showLoading(false);
+  R=[];submittedNames=[];
+  buildGrid([]);renderResp();
+}
+
+function copyR(){
+  if(!R.length){alert('No responses yet!');return;}
+  const aLabel={vl:'Very Low',lo:'Low',md:'Moderate',hi:'High',vh:'Very High'};
+  const text=`Please analyze these LSS commitment gauge responses and suggest specific role assignments per event.\n\nCONTEXT:\n- Events: PaLSSiklaban (retained pheads: Rosh, Angela, Angel, Raymond, Geovin), Transcend (pool: Nikko, Ella, RJay, Ralph, Frances), LSSUMMIT (everyone)\n- Roles: Event Lead, General Lead A (planning/content/publicity), General Lead B (ops/logistics/execution), General Lead C (admin/forms/finance), Core Member\n- Known: Kathy graduated and is out. Angel most inactive in PaLSSiklaban last term. Ralph and Frances most inactive in Transcend last term.\n\nRESPONSES (${R.length}/${OFF.length} officers):\n${R.map((r,i)=>`${i+1}. ${r.name}\n   Availability: ${aLabel[r.avail]||r.avail}\n   Role preference: ${r.roles?r.roles.map((rl,j)=>`${j===0?'1st':'2nd'} choice: ${rl}`).join(', '):'Not specified'}\n   Reasons: ${r.reasons&&r.reasons.length?r.reasons.join(', '):'None specified'}\n   Schedule filled: ${r.schedFilled?'Yes':'No/Pending'}\n   Notes: "${r.notes||'none'}"`).join('\n')}`;
+  const box=document.getElementById('cbox');
+  const ci=document.getElementById('ci');
+  const btn=document.getElementById('cbtn');
+  box.textContent=text;box.style.display='block';ci.style.display='block';
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.classList.add('copied');
+    document.getElementById('cbi').textContent='✓';
+    document.getElementById('cbt').textContent='Copied! Paste it in Claude chat';
+    setTimeout(()=>{btn.classList.remove('copied');document.getElementById('cbi').textContent='📋';document.getElementById('cbt').textContent='Copy responses for Claude';},4000);
+  }).catch(()=>{document.getElementById('cbt').textContent='Select the text above and copy manually';});
+}
+
+function goTo(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+buildNumpad();
+loadProgress();
+</script>
+</body>
+</html>
